@@ -1,0 +1,21 @@
+{
+  "name": "practica04_230187",
+  "version": "1.0.0",
+  "description": "Realizar un ejemplo de aplicacion web basadaa en el Tech Stack de NodeJS, Express que permita controlar las Sesiones que registre  los siguientes datos en las variables de sesión",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Carlos Daniel Garcia Pluma",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "macaddress": "^0.5.3",
+    "moment-timezone": "^0.5.46",
+    "uuid": "^11.0.5"
+  }
+}
