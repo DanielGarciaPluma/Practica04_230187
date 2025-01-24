@@ -1,7 +1,9 @@
 import express from "express";
+import session from "express-session";
 import bodyParser from "body-parser";
-import cors from "cors";
+import moment from "moment-timezone";
 import { v4 as uuidv4 } from "uuid";
+import cors from "cors";
 import os from "os";
 
 const app = express();
@@ -9,8 +11,27 @@ app.use(express.json());
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use(
+    session({
+        secret: "P4-CDGP#SesionesHTTP-VariablesDeSesion",
+        resave: false,
+        saveUninitialized: false,
+        cookie: { maxAge: 5 * 60 * 1000 } // 5 minutos
+    })
+)
+
 // Sesiones almacenadas en memoria
 const sessions = {};
+
+// Función de utilidad para obtener la IP del cliente
+const getClientIp = (req) => {
+  return (
+    req.headers["x-forwarded-for"] ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    req.connection?.socket?.remoteAddress
+  );
+};
 
 //Funcion de utiladad que nos permitira acceder a la informacion de la interfaz de red 
 const getServerNetworkInfo = () => {
@@ -24,18 +45,9 @@ const getServerNetworkInfo = () => {
     }
 }
 
-// Función de utilidad para obtener la IP del cliente
-const getClientIp = (req) => {
-  return (
-    req.headers["x-forwarded-for"] ||
-    req.connection?.remoteAddress ||
-    req.socket?.remoteAddress ||
-    req.connection?.socket?.remoteAddress
-  );
-};
-
 // Login Endpoint
 app.post("/login", (req, res) => {
+  console.log(req.body);
   const { email, nickname, macAddress } = req.body;
 
   if (!email || !nickname || !macAddress) {
@@ -43,16 +55,16 @@ app.post("/login", (req, res) => {
   }
 
   const sessionId = uuidv4();
-  const now = new Date();
+  const now = moment().tz('America/Mexico_City'); // Obtener la hora actual en CDMX
 
   sessions[sessionId] = {
     sessionId,
     email,
     nickname,
     macAddress,
-    ip: getServerNetworkInfo(req),
-    createdAt: now,
-    lastAccessedAt: now,
+    ip:getServerNetworkInfo(),
+    createAt: now.format('YYYY-MM-DD HH:mm:ss'), // Formatear la fecha en CDMX
+    lastAccessed: now.format('YYYY-MM-DD HH:mm:ss'), // Formatear la fecha en CDMX
   };
 
   res.status(200).json({
@@ -70,6 +82,11 @@ app.post("/logout", (req, res) => {
   }
 
   delete sessions[sessionId];
+  req.session?.destroy((err) => {
+      if (err) {
+          return res.status(500).send("Error al cerrar la sesión.");
+      }
+  })
   res.status(200).json({ message: "Logout exitoso." });
 });
 
@@ -85,10 +102,15 @@ app.put("/update", (req, res) => {
   if (nickname) sessions[sessionId].nickname = nickname;
   sessions[sessionId].lastAccessedAt = new Date();
 
-  res.status(200).json({
-    message: "Sesión actualizada correctamente.",
-    session: sessions[sessionId],
-  });
+    res.status(200).json({
+        message: "Sesión actualizada correctamente.",
+        session: {
+            sessionId,
+            email: sessions[sessionId].email,
+            nickname: sessions[sessionId].nickname,
+            lastAccessedAt: sessions[sessionId].lastAccessedAt,
+        },
+    });
 });
 
 // Estado de la sesión
@@ -98,15 +120,37 @@ app.get("/status", (req, res) => {
   if (!sessionId || !sessions[sessionId]) {
     return res.status(404).json({ message: "No hay sesión activa." });
   }
-
+    const nowCDMX = moment().tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss');
+//agregar el status de la sesion 
   res.status(200).json({
     message: "Sesión activa.",
     session: sessions[sessionId],
+    horaActualCDMX:nowCDMX
   });
 });
 
+
+app.get("/",(req,res)=>{
+  return res.status(200).json({
+    message:"Bienvenid@ ala API de control de sesiones",
+    author:"Carlos Daniel Garcia Pluma"
+  });
+});
+app.get('/sessions', (req, res) => {
+  res.status(200).json({
+      message: 'Sesiones activas',
+      sessions: Object.values(sessions), // Retornar todas las sesiones activas
+  });
+});
 // Inicia el servidor
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
+
+// mi ip    10.10.10.60.24
+// ip de raul 10.10.60.10
+// ip de edwin 10.10.60.25
+// ip de Obed 10.10.60.17
+// ip de paco 10.10.60.21
+// ip de matias 10.10.60.9
