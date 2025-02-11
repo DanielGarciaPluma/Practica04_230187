@@ -95,22 +95,22 @@ app.put("/update", (req, res) => {
   const { sessionId, email, nickname } = req.body;
 
   if (!sessionId || !sessions[sessionId]) {
-    return res.status(404).json({ message: "No existe una sesión activa." });
+      return res.status(404).json({ message: "No existe una sesión activa." });
   }
+  const now = new Date();
+  const session = sessions[sessionId];
 
-  if (email) sessions[sessionId].email = email;
-  if (nickname) sessions[sessionId].nickname = nickname;
-  sessions[sessionId].lastAccessedAt = new Date();
+  if (email) session.email = email;
+  if (nickname) session.nickname = nickname;
 
-    res.status(200).json({
-        message: "Sesión actualizada correctamente.",
-        session: {
-            sessionId,
-            email: sessions[sessionId].email,
-            nickname: sessions[sessionId].nickname,
-            lastAccessedAt: sessions[sessionId].lastAccessedAt,
-        },
-    });
+  // Cálculo de duración e inactividad
+  session.duration = (now - new Date(session.createdAt)) / 1000; // en segundos
+  session.inactivityTime = (now - new Date(session.lastAccessedAt)) / 1000; // en segundos
+  session.lastAccessedAt = now;
+  res.status(200).json({
+      message: "Sesión actualizada correctamente.",
+      session,
+  });
 });
 
 // Estado de la sesión
@@ -148,9 +148,6 @@ app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
 
-// mi ip    10.10.10.60.24
-// ip de raul 10.10.60.10
-// ip de edwin 10.10.60.25
-// ip de Obed 10.10.60.17
-// ip de paco 10.10.60.21
-// ip de matias 10.10.60.9
+// mi ip 192.168.98.57
+// ip de Jona 192.168.98.175
+// ip de Brisa 192.168.98.66
